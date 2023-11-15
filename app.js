@@ -89,13 +89,13 @@ app.post('/new-account', async (req, res) => {
 
   try {
       // Retrieve data from the request body
-      const { email, firstName, lastName, mobile, password } = req.body;
-      
+      //const { email, firstName, lastName, mobile, password } = req.body;
+      const { email, password } = req.body;
       // Check if the user with the given email exists in the database
       const existingUser = await User.findOne({ email });
 
       if (existingUser) {
-        return res.status(404).json({ message: "failed", error: 'Email already exist' });
+        return res.status(200).json({ message: "failed", error: 'Email already exist' });
       }
 
       // Hash the password
@@ -103,9 +103,6 @@ app.post('/new-account', async (req, res) => {
       // Create a new user instance
       const newUser = new User({
         email,
-        firstName,
-        lastName,
-        mobile,
         password: password, // Save the hashed password
       });
 
@@ -113,14 +110,14 @@ app.post('/new-account', async (req, res) => {
       await newUser.save();
       
       // Perform actions with the received data
-      console.log('Received data:', { email, firstName, lastName, mobile, password });
+      console.log('Received data:', { email, password });
       const token = jwt.sign({ userId: newUser.id }, secretKey, { expiresIn: '24h' });
             
       return res.status(200).json({ message: 'success', email: email, token: token });
   }
   catch(error) {
     console.error('Error:', error);
-    return res.status(500).json({ error: 'Internal Server Error' });
+    return res.status(500).json({ message: "failed", error: 'Internal Server Error' });
   }
 });
   
