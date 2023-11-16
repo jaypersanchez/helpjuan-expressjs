@@ -80,7 +80,7 @@ app.get('/get-settings', (req, res) => {
             if (data) {
                 // Passwords match, generate a JWT
                 const token = jwt.sign({ userId: existingUser.id }, secretKey, { expiresIn: '24h' });
-                return res.status(200).json({ message:data, token: token })
+                return res.status(200).json({ message:true, token: token, email: existingUser.email, id: existingUser._id })
             } //else {
                 //return res.status(200).json({ message: data, error: "Invalid credential" })
             //}
@@ -122,7 +122,7 @@ app.post('/new-account', async (req, res) => {
       console.log('Received data:', { email, password });
       const token = jwt.sign({ userId: newUser.id }, secretKey, { expiresIn: '24h' });
             
-      return res.status(200).json({ message: 'success', email: email, token: token });
+      return res.status(200).json({ message: 'success', token: token, email: email, id: newUser.id });
   }
   catch(error) {
     console.error('Error:', error);
