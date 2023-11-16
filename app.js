@@ -58,29 +58,38 @@ app.get('/get-settings', (req, res) => {
 
 
   app.post('/login', async (req, res) => {
-    const { email, password } = req.body;
-  
-    // Check if the user with the given email exists in the database
-    const existingUser = await User.findOne({ email });
-
-    if (!existingUser) {
-      return res.status(404).json({ message: "failed", error: 'User not found' });
-    }
+      try {
+        const { email, password } = req.body;
         
-    // Verify the password
-    bcrypt.compare(req.body.password, existingUser.password, (err, data) => {
-        //if error than throw error
-        if (err) throw err
-
-        //if both match than you can do anything
-        if (data) {
-            // Passwords match, generate a JWT
-            const token = jwt.sign({ userId: existingUser.id }, secretKey, { expiresIn: '24h' });
-            return res.status(200).json({ data:data, token: token })
-        } else {
-            return res.status(401).json({ data: data, msg: "Invalid credencial" })
+        // Check if the user with the given email exists in the database
+        const existingUser = await User.findOne({ email });
+        console.log(`Authenticate ${existingUser.email}::${password}`)
+        if (!existingUser) {
+          return res.status(200).json({ message: "failed", error: 'User not found' });
         }
-    })
+            
+        // Verify the password
+        bcrypt.compare(password, existingUser.password, (err, data) => {
+            //if error than throw error
+            if (err) {
+              console.log(`error already`)
+              throw err
+            }
+
+            //if both match than you can do anything
+            if (data) {
+                // Passwords match, generate a JWT
+                const token = jwt.sign({ userId: existingUser.id }, secretKey, { expiresIn: '24h' });
+                return res.status(200).json({ message:data, token: token })
+            } //else {
+                //return res.status(200).json({ message: data, error: "Invalid credential" })
+            //}
+        })
+    }
+    catch(error) {
+      console.error('Error:', error);
+      return res.status(500).json({ message: "failed", error: 'Internal Server Error' });
+    }
   });
 
  
