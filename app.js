@@ -26,14 +26,34 @@ const secretKey = process.env.SECRET_KEY
 const users = [];
 
 // Get route methods
-app.get('/get-users', (req, res) => {
+app.get('/get-users', async (req, res) => {
     // Handle the GET request for the "users" route
     // You can return data or perform other actions here
 });
   
-app.get('/get-profile', (req, res) => {
-    // Handle the GET request for the "users" route
-    // You can return data or perform other actions here
+app.get('/get-profile', async (req, res) => {
+  try {
+    const { email, id } = req.query;
+
+    // Add your logic to fetch the user profile based on the provided email or id
+    // For example, using Mongoose:
+    const user = await User.findOne({ $or: [{ email }, { _id: id }] }, { email: 1, firstName: 1, lastName: 1, mobile: 1 });
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Return the user profile
+    return res.json({
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      mobile: user.mobile,
+    });
+  } catch (error) {
+    console.error('Error:', error);
+    return res.status(500).json({ message: 'Internal Server Error' });
+  }
 });
 
 app.get('/get-postads', (req, res) => {
@@ -56,6 +76,33 @@ app.get('/get-settings', (req, res) => {
     // You can return data or perform other actions here
 });
 
+  app.post('/update-profile', async (req, res) => {
+      try {
+        const { email, id, firstName, lastName, mobile } = req.body;
+
+        // Find the user by email or ID
+        const user = await User.findOne({ $or: [{ email }, { _id: id }] });
+
+        if (!user) {
+          return res.status(404).json({ message: 'User not found' });
+        }
+
+        // Update the user fields
+        if (firstName) user.firstName = firstName;
+        if (lastName) user.lastName = lastName;
+        if (mobile) user.mobile = mobile;
+
+        // Save the updated user
+        await user.save();
+
+        return res.status(200).json({ message: 'Profile updated successfully', user });
+
+      }
+      catch(error) {
+        console.error('Error:', error);
+        return res.status(500).json({ message: "failed", error: 'Internal Server Error' });
+      }
+  })
 
   app.post('/login', async (req, res) => {
       try {
