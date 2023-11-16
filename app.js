@@ -77,31 +77,30 @@ app.get('/get-settings', (req, res) => {
 });
 
   app.post('/update-profile', async (req, res) => {
-      try {
-        const { email, id, firstName, lastName, mobile } = req.body;
-
-        // Find the user by email or ID
-        const user = await User.findOne({ $or: [{ email }, { _id: id }] });
-
-        if (!user) {
-          return res.status(404).json({ message: 'User not found' });
-        }
-
-        // Update the user fields
-        if (firstName) user.firstName = firstName;
-        if (lastName) user.lastName = lastName;
-        if (mobile) user.mobile = mobile;
-
-        // Save the updated user
-        await user.save();
-
-        return res.status(200).json({ message: 'Profile updated successfully', user });
-
+    try {
+      const { email, id, firstName, lastName, mobile } = req.body;
+  
+      // Find the user by email or ID
+      const user = await User.findOne({ $or: [{ email }, { _id: id }] });
+  
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
       }
-      catch(error) {
-        console.error('Error:', error);
-        return res.status(500).json({ message: "failed", error: 'Internal Server Error' });
-      }
+  
+      // Update the user fields
+      if (firstName) user.firstName = firstName;
+      if (lastName) user.lastName = lastName;
+      if (mobile) user.mobile = mobile;
+  
+      // Save the updated user
+      await user.save();
+  
+      return res.status(200).json({ message: 'Profile updated successfully', user });
+  
+    } catch (error) {
+      console.error('Error:', error);
+      return res.status(500).json({ message: 'Failed', error: 'Internal Server Error' });
+    }
   })
 
   app.post('/login', async (req, res) => {
@@ -114,6 +113,9 @@ app.get('/get-settings', (req, res) => {
         if (!existingUser) {
           return res.status(200).json({ message: "failed", error: 'User not found' });
         }
+        else {
+          console.log(`User ${existingUser.email} found`)
+        }
             
         // Verify the password
         bcrypt.compare(password, existingUser.password, (err, data) => {
@@ -122,15 +124,16 @@ app.get('/get-settings', (req, res) => {
               console.log(`error already`)
               throw err
             }
-
+            console.log(`Retrieved authenticated ${data}`)
             //if both match than you can do anything
             if (data) {
                 // Passwords match, generate a JWT
                 const token = jwt.sign({ userId: existingUser.id }, secretKey, { expiresIn: '24h' });
-                return res.status(200).json({ message:true, token: token, email: existingUser.email, id: existingUser._id })
-            } //else {
+                return res.status(200).json({ message:true, token: token, email: existingUser.email })
+            } else {
                 //return res.status(200).json({ message: data, error: "Invalid credential" })
-            //}
+                console.log(`Unable to authenticate user ${existingUser.email}`)
+            }
         })
     }
     catch(error) {
