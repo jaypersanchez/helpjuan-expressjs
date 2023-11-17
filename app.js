@@ -65,6 +65,7 @@ app.post('/get-postads', async (req, res) => {
 
     // Retrieve job posts created by others (excluding the current user)
     const jobAds = await JobAd.find({ userid: { $ne: currentUserID } });
+    console.log(`get-postads ${jobAds}`)
 
     res.status(200).json(jobAds);
   } catch (error) {
@@ -163,7 +164,7 @@ app.get('/get-settings', (req, res) => {
         // Passwords match, generate a JWT
         const token = jwt.sign({ userId: existingUser.id }, secretKey, { expiresIn: '24h' });
   
-        return res.status(200).json({ message: true, userid: existingUser.id,token:token, email: existingUser.email });
+        return res.status(200).json({ message: true, userid: existingUser.id,token:token, email: existingUser.email, firstname:existingUser.firstName });
       } else {
         console.log(`Unable to authenticate user ${existingUser.email}`);
         return res.status(200).json({ message: false, error: "Invalid credential" });
@@ -204,7 +205,7 @@ app.post('/new-account', async (req, res) => {
       console.log('Received data:', { email, password });
       const token = jwt.sign({ userId: newUser.id }, secretKey, { expiresIn: '24h' });
             
-      return res.status(200).json({ message: 'success', userid: newUser.id, token: token, email: email, id: newUser.id });
+      return res.status(200).json({ message: 'success', userid: newUser.id, token: token, email: email, id: newUser.id, firstname: newUser.firstName });
   }
   catch(error) {
     console.error('Error:', error);
