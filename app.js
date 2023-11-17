@@ -8,6 +8,7 @@ require('dotenv').config();
 
 
 const User = require('./models/user'); 
+const JobAd = require('./models/jobAdSchema');
 
 
 const app = express();
@@ -78,7 +79,7 @@ app.get('/get-settings', (req, res) => {
 
   app.post('/update-profile', async (req, res) => {
     try {
-      const { email, id, firstName, lastName, mobile } = req.body;
+      const { email, id, firstName, lastName, mobile, image } = req.body;
   
       // Find the user by email or ID
       const user = await User.findOne({ $or: [{ email }, { _id: id }] });
@@ -91,6 +92,7 @@ app.get('/get-settings', (req, res) => {
       if (firstName) user.firstName = firstName;
       if (lastName) user.lastName = lastName;
       if (mobile) user.mobile = mobile;
+      if (image) user.image = image; // Update the image field
   
       // Save the updated user
       await user.save();
@@ -104,39 +106,34 @@ app.get('/get-settings', (req, res) => {
   })
 
   app.post('/login', async (req, res) => {
-      try {
-        const { email, password } = req.body;
-        
-        // Check if the user with the given email exists in the database
-        const existingUser = await User.findOne({ email });
-        console.log(`Authenticate ${existingUser.email}::${password}`)
-        if (!existingUser) {
-          return res.status(200).json({ message: "failed", error: 'User not found' });
-        }
-        else {
-          console.log(`User ${existingUser.email} found`)
-        }
-            
-        // Verify the password
+    try {
+      const { email, password } = req.body;
+  
+      // Check if the user with the given email exists in the database
+      const existingUser = await User.findOne({ email });
+  
+      if (!existingUser) {
+        return res.status(200).json({ message: "failed", error: 'User not found' });
+      }
+  
+      // Verify the password
+      const isPasswordValid = await new Promise((resolve, reject) => {
         bcrypt.compare(password, existingUser.password, (err, data) => {
-            //if error than throw error
-            if (err) {
-              console.log(`error already`)
-              throw err
-            }
-            console.log(`Retrieved authenticated ${data}`)
-            //if both match than you can do anything
-            if (data) {
-                // Passwords match, generate a JWT
-                const token = jwt.sign({ userId: existingUser.id }, secretKey, { expiresIn: '24h' });
-                return res.status(200).json({ message:true, token: token, email: existingUser.email })
-            } else {
-                //return res.status(200).json({ message: data, error: "Invalid credential" })
-                console.log(`Unable to authenticate user ${existingUser.email}`)
-            }
-        })
-    }
-    catch(error) {
+          if (err) reject(err);
+          else resolve(data);
+        });
+      });
+  
+      if (isPasswordValid) {
+        // Passwords match, generate a JWT
+        const token = jwt.sign({ userId: existingUser.id }, secretKey, { expiresIn: '24h' });
+  
+        return res.status(200).json({ message: true, token, email: existingUser.email });
+      } else {
+        console.log(`Unable to authenticate user ${existingUser.email}`);
+        return res.status(200).json({ message: false, error: "Invalid credential" });
+      }
+    } catch (error) {
       console.error('Error:', error);
       return res.status(500).json({ message: "failed", error: 'Internal Server Error' });
     }
@@ -181,9 +178,25 @@ app.post('/new-account', async (req, res) => {
 });
   
 
-app.post('/post-postads', (req, res) => {
-    // Handle the GET request for the "users" route
-    // You can return data or perform other actions here
+app.post('/post-postads', async (req, res) => {
+  try {
+    const { title, description, budget } = req.body;
+    console.log(`PostJobAd ${title}`)
+    // Create a new JobAd instance
+    const newJobAd = new JobAd({
+      title,
+      description,
+      budget,
+    });
+
+    // Save the new JobAd to the database
+    const savedJobAd = await newJobAd.save();
+
+    res.status(201).json({message: 'success', savedJobAd});
+  } catch (error) {
+    console.error('Error:', error);
+    res.status(500).json({ message: 'failed', error: 'Internal Server Error' });
+  }
 });
 
 app.post('/post-search', (req, res) => {

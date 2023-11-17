@@ -28,6 +28,11 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: false,
   },
+  // Add the image field
+  image: {
+    type: String, // Assuming you store the image URL as a string
+    required: false,
+  },
 });
 
 // Hash the password before saving to the database
