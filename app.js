@@ -219,9 +219,35 @@ app.post('/post-postads', async (req, res) => {
   }
 });
 
-app.post('/post-search', (req, res) => {
-    // Handle the GET request for the "users" route
-    // You can return data or perform other actions here
+app.post('/bid', async (req, res) => {
+  try {
+    const { jobId, bidderId, bidAmount } = req.body;
+
+    // Check if the job post exists
+    const jobPost = await JobAd.findById(jobId);
+    if (!jobPost) {
+      return res.status(404).json({ message: 'Job post not found' });
+    }
+
+    // Check if the job post is still open for bidding
+    if (jobPost.close) {
+      return res.status(400).json({ message: 'Job post is closed for bidding' });
+    }
+
+    // Add the bid to the job post
+    jobPost.bids.push({
+      bidderId,
+      bidAmount,
+    });
+
+    // Save the updated job post
+    await jobPost.save();
+
+    res.status(201).json({ message: 'Bid added successfully' });
+  } catch (error) {
+    console.error('Error:', error);
+    res.status(500).json({ message: 'Internal Server Error' });
+  }
 });
 
 app.post('/post-messages', (req, res) => {
