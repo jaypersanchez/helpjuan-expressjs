@@ -147,7 +147,7 @@ app.get('/get-settings', (req, res) => {
         // Passwords match, generate a JWT
         const token = jwt.sign({ userId: existingUser.id }, secretKey, { expiresIn: '24h' });
   
-        return res.status(200).json({ message: true, token, email: existingUser.email });
+        return res.status(200).json({ message: true, userid: existingUser.id,token:token, email: existingUser.email });
       } else {
         console.log(`Unable to authenticate user ${existingUser.email}`);
         return res.status(200).json({ message: false, error: "Invalid credential" });
@@ -188,7 +188,7 @@ app.post('/new-account', async (req, res) => {
       console.log('Received data:', { email, password });
       const token = jwt.sign({ userId: newUser.id }, secretKey, { expiresIn: '24h' });
             
-      return res.status(200).json({ message: 'success', token: token, email: email, id: newUser.id });
+      return res.status(200).json({ message: 'success', userid: newUser.id, token: token, email: email, id: newUser.id });
   }
   catch(error) {
     console.error('Error:', error);
@@ -199,10 +199,11 @@ app.post('/new-account', async (req, res) => {
 
 app.post('/post-postads', async (req, res) => {
   try {
-    const { title, description, budget } = req.body;
-    console.log(`PostJobAd ${title}`)
+    const { userid,title, description, budget } = req.body;
+    console.log(`PostJobAd ${title}::${userid}`)
     // Create a new JobAd instance
     const newJobAd = new JobAd({
+      userid,
       title,
       description,
       budget,
