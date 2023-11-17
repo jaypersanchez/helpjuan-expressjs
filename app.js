@@ -57,9 +57,14 @@ app.get('/get-profile', async (req, res) => {
   }
 });
 
-app.get('/get-postads', (req, res) => {
-    // Handle the GET request for the "users" route
-    // You can return data or perform other actions here
+app.get('/get-postads', async (req, res) => {
+  try {
+    const jobAds = await JobAd.find();
+    res.status(200).json(jobAds);
+  } catch (error) {
+    console.error('Error:', error);
+    res.status(500).json({ message: 'failed', error: 'Internal Server Error' });
+  }
 });
 
 app.get('/get-search', (req, res) => {
