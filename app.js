@@ -57,7 +57,23 @@ app.get('/get-profile', async (req, res) => {
   }
 });
 
-app.get('/get-postads', async (req, res) => {
+//return only job posted by other and not by the current user
+app.post('/get-postads', async (req, res) => {
+  try {
+    // Assuming you have the current user's ID from the request
+    const currentUserID = req.body.userid;  // Adjust this based on how user information is stored in your app
+
+    // Retrieve job posts created by others (excluding the current user)
+    const jobAds = await JobAd.find({ userid: { $ne: currentUserID } });
+
+    res.status(200).json(jobAds);
+  } catch (error) {
+    console.error('Error:', error);
+    res.status(500).json({ message: 'failed', error: 'Internal Server Error' });
+  }
+});
+
+/*app.get('/get-postads', async (req, res) => {
   try {
     const jobAds = await JobAd.find();
     res.status(200).json(jobAds);
@@ -65,7 +81,7 @@ app.get('/get-postads', async (req, res) => {
     console.error('Error:', error);
     res.status(500).json({ message: 'failed', error: 'Internal Server Error' });
   }
-});
+});*/
 
 app.get('/search-ads', async (req, res) => {
   try {
