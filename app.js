@@ -67,9 +67,23 @@ app.get('/get-postads', async (req, res) => {
   }
 });
 
-app.get('/get-search', (req, res) => {
-    // Handle the GET request for the "users" route
-    // You can return data or perform other actions here
+app.get('/search-ads', async (req, res) => {
+  try {
+    const searchString = req.query.search; // Assuming the search string is passed as a query parameter
+
+    // Using a regular expression to perform a case-insensitive search in both title and description
+    const results = await JobAd.find({
+      $or: [
+        { title: { $regex: searchString, $options: 'i' } },
+        { description: { $regex: searchString, $options: 'i' } },
+      ],
+    });
+
+    res.json(results);
+  } catch (error) {
+    console.error('Error:', error);
+    res.status(500).json({ message: 'failed', error: 'Internal Server Error' });
+  }
 });
 
 app.get('/get-messages', (req, res) => {
