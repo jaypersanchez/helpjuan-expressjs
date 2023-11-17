@@ -57,14 +57,49 @@ app.get('/get-profile', async (req, res) => {
   }
 });
 
-app.get('/get-postads', (req, res) => {
-    // Handle the GET request for the "users" route
-    // You can return data or perform other actions here
+//return only job posted by other and not by the current user
+app.post('/get-postads', async (req, res) => {
+  try {
+    // Assuming you have the current user's ID from the request
+    const currentUserID = req.body.userid;  // Adjust this based on how user information is stored in your app
+
+    // Retrieve job posts created by others (excluding the current user)
+    const jobAds = await JobAd.find({ userid: { $ne: currentUserID } });
+
+    res.status(200).json(jobAds);
+  } catch (error) {
+    console.error('Error:', error);
+    res.status(500).json({ message: 'failed', error: 'Internal Server Error' });
+  }
 });
 
-app.get('/get-search', (req, res) => {
-    // Handle the GET request for the "users" route
-    // You can return data or perform other actions here
+/*app.get('/get-postads', async (req, res) => {
+  try {
+    const jobAds = await JobAd.find();
+    res.status(200).json(jobAds);
+  } catch (error) {
+    console.error('Error:', error);
+    res.status(500).json({ message: 'failed', error: 'Internal Server Error' });
+  }
+});*/
+
+app.get('/search-ads', async (req, res) => {
+  try {
+    const searchString = req.query.search; // Assuming the search string is passed as a query parameter
+
+    // Using a regular expression to perform a case-insensitive search in both title and description
+    const results = await JobAd.find({
+      $or: [
+        { title: { $regex: searchString, $options: 'i' } },
+        { description: { $regex: searchString, $options: 'i' } },
+      ],
+    });
+
+    res.json(results);
+  } catch (error) {
+    console.error('Error:', error);
+    res.status(500).json({ message: 'failed', error: 'Internal Server Error' });
+  }
 });
 
 app.get('/get-messages', (req, res) => {
@@ -128,7 +163,7 @@ app.get('/get-settings', (req, res) => {
         // Passwords match, generate a JWT
         const token = jwt.sign({ userId: existingUser.id }, secretKey, { expiresIn: '24h' });
   
-        return res.status(200).json({ message: true, token, email: existingUser.email });
+        return res.status(200).json({ message: true, userid: existingUser.id,token:token, email: existingUser.email });
       } else {
         console.log(`Unable to authenticate user ${existingUser.email}`);
         return res.status(200).json({ message: false, error: "Invalid credential" });
@@ -169,7 +204,7 @@ app.post('/new-account', async (req, res) => {
       console.log('Received data:', { email, password });
       const token = jwt.sign({ userId: newUser.id }, secretKey, { expiresIn: '24h' });
             
-      return res.status(200).json({ message: 'success', token: token, email: email, id: newUser.id });
+      return res.status(200).json({ message: 'success', userid: newUser.id, token: token, email: email, id: newUser.id });
   }
   catch(error) {
     console.error('Error:', error);
@@ -180,10 +215,11 @@ app.post('/new-account', async (req, res) => {
 
 app.post('/post-postads', async (req, res) => {
   try {
-    const { title, description, budget } = req.body;
-    console.log(`PostJobAd ${title}`)
+    const { userid,title, description, budget } = req.body;
+    console.log(`PostJobAd ${title}::${userid}`)
     // Create a new JobAd instance
     const newJobAd = new JobAd({
+      userid,
       title,
       description,
       budget,
@@ -199,9 +235,35 @@ app.post('/post-postads', async (req, res) => {
   }
 });
 
-app.post('/post-search', (req, res) => {
-    // Handle the GET request for the "users" route
-    // You can return data or perform other actions here
+app.post('/bid', async (req, res) => {
+  try {
+    const { jobId, bidderId, bidAmount } = req.body;
+
+    // Check if the job post exists
+    const jobPost = await JobAd.findById(jobId);
+    if (!jobPost) {
+      return res.status(404).json({ message: 'Job post not found' });
+    }
+
+    // Check if the job post is still open for bidding
+    if (jobPost.close) {
+      return res.status(400).json({ message: 'Job post is closed for bidding' });
+    }
+
+    // Add the bid to the job post
+    jobPost.bids.push({
+      bidderId,
+      bidAmount,
+    });
+
+    // Save the updated job post
+    await jobPost.save();
+
+    res.status(201).json({ message: 'Bid added successfully' });
+  } catch (error) {
+    console.error('Error:', error);
+    res.status(500).json({ message: 'Internal Server Error' });
+  }
 });
 
 app.post('/post-messages', (req, res) => {
