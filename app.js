@@ -164,14 +164,14 @@ app.get('/get-settings', (req, res) => {
         // Passwords match, generate a JWT
         const token = jwt.sign({ userId: existingUser.id }, secretKey, { expiresIn: '24h' });
   
-        return res.status(200).json({ message: true, userid: existingUser.id,token:token, email: existingUser.email, firstname:existingUser.firstName });
+        return res.status(200).json({ message: "success", userid: existingUser.id,token:token, email: existingUser.email, firstname:existingUser.firstName });
       } else {
         console.log(`Unable to authenticate user ${existingUser.email}`);
-        return res.status(200).json({ message: false, error: "Invalid credential" });
+        return res.status(200).json({ message: "fail", error: "Invalid credential" });
       }
     } catch (error) {
       console.error('Error:', error);
-      return res.status(500).json({ message: "failed", error: 'Internal Server Error' });
+      return res.status(500).json({ message: "fail", error: 'Internal Server Error' });
     }
   });
 
