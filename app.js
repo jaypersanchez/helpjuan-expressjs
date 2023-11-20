@@ -74,15 +74,20 @@ app.post('/get-postads', async (req, res) => {
   }
 });
 
-/*app.get('/get-postads', async (req, res) => {
+// Endpoint to get all job posts by a specific user
+app.get('/get-jobads/:userid', async (req, res) => {
   try {
-    const jobAds = await JobAd.find();
+    const userId = req.params.userid;
+
+    // Find all job ads by the specified user
+    const jobAds = await JobAd.find({ userid: userId });
+
     res.status(200).json(jobAds);
   } catch (error) {
     console.error('Error:', error);
     res.status(500).json({ message: 'failed', error: 'Internal Server Error' });
   }
-});*/
+});
 
 app.get('/search-ads', async (req, res) => {
   try {
@@ -100,6 +105,37 @@ app.get('/search-ads', async (req, res) => {
   } catch (error) {
     console.error('Error:', error);
     res.status(500).json({ message: 'failed', error: 'Internal Server Error' });
+  }
+});
+
+// Endpoint to get all jobs a user has placed a bid on
+app.get('/user-bids/:bidderId', async (req, res) => {
+  try {
+    const bidderId = req.params.bidderId;
+
+    // Find jobs where the user has placed a bid
+    const jobsWithBids = await JobAd.find({ 'bids.bidderId': bidderId });
+
+    // Extract and format the necessary fields
+    const userBids = jobsWithBids.map((job) => ({
+      userid: job.userid,
+      title: job.title,
+      description: job.description,
+      budget: job.budget,
+      close: job.close,
+      createdAt: job.createdAt,
+      bids: job.bids
+        .filter((bid) => bid.bidderId === bidderId) // Filter bids for the specific user
+        .map((filteredBid) => ({
+          bidAmount: filteredBid.bidAmount,
+          bidTime: filteredBid.bidTime,
+        })),
+    }));
+
+    res.status(200).json(userBids);
+  } catch (error) {
+    console.error('Error:', error);
+    res.status(500).json({ message: 'Internal Server Error' });
   }
 });
 
