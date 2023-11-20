@@ -74,6 +74,42 @@ app.post('/get-postads', async (req, res) => {
   }
 });
 
+// Endpoint to get all bidders based on userid
+app.get('/job/:jobId/bidders', async (req, res) => {
+  try {
+    const { userId } = req.query; // Assuming userId is passed as a query parameter
+    const { jobId } = req.params;
+    
+    // Fetch the job ad with specified jobId and check if it belongs to the user
+    const jobAd = await JobAd.findOne({ _id: jobId, userid: userId })
+    if (!jobAd) {
+      return res.status(404).json({ message: 'Job ad not found for the specified user.' });
+    }
+    else {
+        // Extract and return the bidders information
+        // Extract and return the bidders information
+        const bidders = await Promise.all(jobAd.bids.map(async (bid) => {
+          const bidderUser = await User.findOne({ _id: bid.bidderId });
+          return {
+            bidderId: bid.bidderId,
+            bidderName: bidderUser ? `${bidderUser.firstName} ${bidderUser.lastName}` : "Unknown Bidder",
+            bidAmount: bid.bidAmount,
+            bidTime: bid.bidTime,
+            rewarded: bid.rewarded,
+          };
+        }));
+        // Now you have an array of bidder details
+        console.log('Bidders:', bidders);
+        // Send the details back to the client
+        res.status(200).json(bidders);
+    }
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Internal Server Error' });
+  }
+});
+
 // Endpoint to get all job posts by a specific user
 app.get('/get-jobads/:userid', async (req, res) => {
   try {
