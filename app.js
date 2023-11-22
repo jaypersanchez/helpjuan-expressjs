@@ -91,6 +91,7 @@ app.get('/job/:jobId/bidders', async (req, res) => {
         const bidders = await Promise.all(jobAd.bids.map(async (bid) => {
           const bidderUser = await User.findOne({ _id: bid.bidderId });
           return {
+            jobbidid: bid._id,
             bidderId: bid.bidderId,
             bidderName: bidderUser ? `${bidderUser.firstName} ${bidderUser.lastName}` : "Unknown Bidder",
             bidAmount: bid.bidAmount,
@@ -106,6 +107,35 @@ app.get('/job/:jobId/bidders', async (req, res) => {
 
   } catch (error) {
     console.error(error);
+    res.status(500).json({ message: 'Internal Server Error' });
+  }
+});
+
+app.post('/job/:jobId/bid/:bidId/message', async (req, res) => {
+  const { jobId, bidId } = req.params;
+  const { senderId, receiverId, message } = req.body;
+
+  try {
+    const jobAd = await JobAd.findOne({ _id: jobId, 'bids._id': bidId });
+
+    if (!jobAd) {
+      return res.status(404).json({ message: 'Job or bid not found.' });
+    }
+
+    const bidIndex = jobAd.bids.findIndex((bid) => bid._id.toString() === bidId);
+    const newMessage = {
+      senderId,
+      receiverId,
+      message,
+    };
+    console.log(`saving message data ${senderId}::${receiverId}::${message}`)
+    jobAd.bids[bidIndex].messages.push(newMessage);
+    console.log(`saving message data ${senderId}::${receiverId}::${message}`)
+    await jobAd.save();
+
+    res.status(201).json({ message: 'Message saved successfully.' });
+  } catch (error) {
+    console.error('Error saving message:', error);
     res.status(500).json({ message: 'Internal Server Error' });
   }
 });
