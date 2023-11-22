@@ -111,6 +111,7 @@ app.get('/job/:jobId/bidders', async (req, res) => {
   }
 });
 
+//post messages
 app.post('/job/:jobId/bid/:bidId/message', async (req, res) => {
   const { jobId, bidId } = req.params;
   const { senderId, receiverId, message } = req.body;
@@ -139,6 +140,32 @@ app.post('/job/:jobId/bid/:bidId/message', async (req, res) => {
     res.status(500).json({ message: 'Internal Server Error' });
   }
 });
+
+// Get messages
+app.get('/job/:jobId/bid/:bidderId/messages', async (req, res) => {
+  const { jobId, bidderId } = req.params;
+
+  try {
+    //const jobAd = await JobAd.findOne({ _id: jobId, 'bids._id': bidId });
+    const jobAd = await JobAd.findOne({ _id: jobId, 'bids.bidderId': bidderId});
+    
+    if (!jobAd) {
+      return res.status(404).json({ message: 'Job or bid not found.' });
+    }
+    else {
+      console.log(`Messages for job ${jobId} and bidder ${bidderId} found`)
+    }
+
+    const bidIndex = jobAd.bids.findIndex((bid) => bid.bidderId === bidderId);
+    const messages = jobAd.bids[bidIndex].messages;
+
+    res.status(200).json({ messages });
+  } catch (error) {
+    console.error('Error getting messages:', error);
+    res.status(500).json({ message: 'Internal Server Error' });
+  }
+});
+
 
 // Endpoint to get all job posts by a specific user
 app.get('/get-jobads/:userid', async (req, res) => {
@@ -184,6 +211,7 @@ app.get('/user-bids/:bidderId', async (req, res) => {
 
     // Extract and format the necessary fields
     const userBids = jobsWithBids.map((job) => ({
+      jobid:job._id,
       userid: job.userid,
       title: job.title,
       description: job.description,
@@ -197,7 +225,7 @@ app.get('/user-bids/:bidderId', async (req, res) => {
           bidTime: filteredBid.bidTime,
         })),
     }));
-
+    //console.log(`Messages for ${job._id} and ${bidderId} found`)
     res.status(200).json(userBids);
   } catch (error) {
     console.error('Error:', error);
