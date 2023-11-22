@@ -111,11 +111,59 @@ app.get('/job/:jobId/bidders', async (req, res) => {
   }
 });
 
-//post messages
-app.post('/job/:jobId/bid/:bidId/message', async (req, res) => {
+// Endpoint to get all JobAds for a specific userid
+app.get('/jobads/:userid', async (req, res) => {
+  const { userid } = req.params;
+
+  try {
+    // Find all JobAds that match the provided userid
+    const jobAds = await JobAd.find({ userid });
+
+    if (!jobAds || jobAds.length === 0) {
+      return res.status(404).json({ message: 'No JobAds found for the given userid.' });
+    }
+
+    res.status(200).json(jobAds);
+  } catch (error) {
+    console.error('Error fetching JobAds:', error);
+    res.status(500).json({ message: 'Internal Server Error' });
+  }
+});
+
+//post messages from the bidder 
+app.post('/job/:jobId/bid/:bidId/bidder-message', async (req, res) => {
   const { jobId, bidId } = req.params;
   const { senderId, receiverId, message } = req.body;
 
+  try {
+    const jobAd = await JobAd.findOne({ _id: jobId, 'bids.bidderId': bidId });
+
+    if (!jobAd) {
+      return res.status(404).json({ message: 'Job or bid not found.' });
+    }
+
+    const bidIndex = jobAd.bids.findIndex((bid) => bid.bidderId === bidId);
+    const newMessage = {
+      senderId,
+      receiverId,
+      message,
+    };
+
+    jobAd.bids[bidIndex].messages.push(newMessage);
+    await jobAd.save();
+
+    res.status(201).json({ message: 'Message saved successfully.' });
+  } catch (error) {
+    console.error('Error saving message:', error);
+    res.status(500).json({ message: 'Internal Server Error' });
+  }
+});
+
+//post messages from client or job poster end
+app.post('/job/:jobId/bid/:bidId/message', async (req, res) => {
+  const { jobId, bidId } = req.params;
+  const { senderId, receiverId, message } = req.body;
+  console.log(`${senderId} ${receiverId} ${message}`)
   try {
     const jobAd = await JobAd.findOne({ _id: jobId, 'bids._id': bidId });
 
@@ -141,7 +189,7 @@ app.post('/job/:jobId/bid/:bidId/message', async (req, res) => {
   }
 });
 
-// Get messages
+// Get messages for bidder's view
 app.get('/job/:jobId/bid/:bidderId/messages', async (req, res) => {
   const { jobId, bidderId } = req.params;
 
