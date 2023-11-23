@@ -163,7 +163,7 @@ app.post('/job/:jobId/bid/:bidId/bidder-message', async (req, res) => {
 app.post('/job/:jobId/bid/:bidId/message', async (req, res) => {
   const { jobId, bidId } = req.params;
   const { senderId, receiverId, message } = req.body;
-  console.log(`${senderId} ${receiverId} ${message}`)
+  console.log(`${jobId}::${bidId}::${senderId} ${receiverId} ${message}`)
   try {
     const jobAd = await JobAd.findOne({ _id: jobId, 'bids._id': bidId });
 
