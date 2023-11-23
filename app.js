@@ -62,7 +62,7 @@ app.post('/get-postads', async (req, res) => {
   try {
     // Assuming you have the current user's ID from the request
     const currentUserID = req.body.userid;  // Adjust this based on how user information is stored in your app
-
+    
     // Retrieve job posts created by others (excluding the current user)
     const jobAds = await JobAd.find({ userid: { $ne: currentUserID } });
     console.log(`get-postads ${jobAds}`)
@@ -444,6 +444,32 @@ app.post('/bid', async (req, res) => {
     res.status(500).json({ message: 'Internal Server Error' });
   }
 });
+
+// Endpoint to mark a bid as rewarded
+app.post('/job/reward-bid/:jobId/:bidId', async (req, res) => {
+  const { jobId, bidId } = req.params;
+
+  try {
+    const jobAd = await JobAd.findOne({ _id: jobId, 'bids._id': bidId });
+
+    if (!jobAd) {
+      return res.status(404).json({ message: 'Job or bid not found.' });
+    }
+
+    const bidIndex = jobAd.bids.findIndex((bid) => bid._id.toString() === bidId);
+
+    // Mark the bid as rewarded
+    jobAd.bids[bidIndex].rewarded = true;
+
+    await jobAd.save();
+
+    res.status(200).json({ message: 'Bid marked as rewarded successfully.' });
+  } catch (error) {
+    console.error('Error marking bid as rewarded:', error);
+    res.status(500).json({ message: 'Internal Server Error' });
+  }
+});
+
 
 app.post('/post-messages', (req, res) => {
     // Handle the GET request for the "users" route
