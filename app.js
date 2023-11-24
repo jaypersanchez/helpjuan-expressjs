@@ -62,9 +62,10 @@ app.post('/get-postads', async (req, res) => {
   try {
     // Assuming you have the current user's ID from the request
     const currentUserID = req.body.userid;  // Adjust this based on how user information is stored in your app
-
+    
     // Retrieve job posts created by others (excluding the current user)
     const jobAds = await JobAd.find({ userid: { $ne: currentUserID } });
+    console.log(`get-postads ${jobAds}`)
 
     res.status(200).json(jobAds);
   } catch (error) {
@@ -73,15 +74,161 @@ app.post('/get-postads', async (req, res) => {
   }
 });
 
-/*app.get('/get-postads', async (req, res) => {
+// Endpoint to get all bidders based on userid
+app.get('/job/:jobId/bidders', async (req, res) => {
   try {
-    const jobAds = await JobAd.find();
+    const { userId } = req.query; // Assuming userId is passed as a query parameter
+    const { jobId } = req.params;
+    
+    // Fetch the job ad with specified jobId and check if it belongs to the user
+    const jobAd = await JobAd.findOne({ _id: jobId, userid: userId })
+    if (!jobAd) {
+      return res.status(404).json({ message: 'Job ad not found for the specified user.' });
+    }
+    else {
+        // Extract and return the bidders information
+        // Extract and return the bidders information
+        const bidders = await Promise.all(jobAd.bids.map(async (bid) => {
+          const bidderUser = await User.findOne({ _id: bid.bidderId });
+          return {
+            jobbidid: bid._id,
+            bidderId: bid.bidderId,
+            bidderName: bidderUser ? `${bidderUser.firstName} ${bidderUser.lastName}` : "Unknown Bidder",
+            bidAmount: bid.bidAmount,
+            bidTime: bid.bidTime,
+            rewarded: bid.rewarded,
+          };
+        }));
+        // Now you have an array of bidder details
+        console.log('Bidders:', bidders);
+        // Send the details back to the client
+        res.status(200).json(bidders);
+    }
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Internal Server Error' });
+  }
+});
+
+// Endpoint to get all JobAds for a specific userid
+app.get('/jobads/:userid', async (req, res) => {
+  const { userid } = req.params;
+
+  try {
+    // Find all JobAds that match the provided userid
+    const jobAds = await JobAd.find({ userid });
+
+    if (!jobAds || jobAds.length === 0) {
+      return res.status(404).json({ message: 'No JobAds found for the given userid.' });
+    }
+
+    res.status(200).json(jobAds);
+  } catch (error) {
+    console.error('Error fetching JobAds:', error);
+    res.status(500).json({ message: 'Internal Server Error' });
+  }
+});
+
+//post messages from the bidder 
+app.post('/job/:jobId/bid/:bidId/bidder-message', async (req, res) => {
+  const { jobId, bidId } = req.params;
+  const { senderId, receiverId, message } = req.body;
+
+  try {
+    const jobAd = await JobAd.findOne({ _id: jobId, 'bids.bidderId': bidId });
+
+    if (!jobAd) {
+      return res.status(404).json({ message: 'Job or bid not found.' });
+    }
+
+    const bidIndex = jobAd.bids.findIndex((bid) => bid.bidderId === bidId);
+    const newMessage = {
+      senderId,
+      receiverId,
+      message,
+    };
+
+    jobAd.bids[bidIndex].messages.push(newMessage);
+    await jobAd.save();
+
+    res.status(201).json({ message: 'Message saved successfully.' });
+  } catch (error) {
+    console.error('Error saving message:', error);
+    res.status(500).json({ message: 'Internal Server Error' });
+  }
+});
+
+//post messages from client or job poster end
+app.post('/job/:jobId/bid/:bidId/message', async (req, res) => {
+  const { jobId, bidId } = req.params;
+  const { senderId, receiverId, message } = req.body;
+  console.log(`${jobId}::${bidId}::${senderId} ${receiverId} ${message}`)
+  try {
+    const jobAd = await JobAd.findOne({ _id: jobId, 'bids._id': bidId });
+
+    if (!jobAd) {
+      return res.status(404).json({ message: 'Job or bid not found.' });
+    }
+
+    const bidIndex = jobAd.bids.findIndex((bid) => bid._id.toString() === bidId);
+    const newMessage = {
+      senderId,
+      receiverId,
+      message,
+    };
+    console.log(`saving message data ${senderId}::${receiverId}::${message}`)
+    jobAd.bids[bidIndex].messages.push(newMessage);
+    console.log(`saving message data ${senderId}::${receiverId}::${message}`)
+    await jobAd.save();
+
+    res.status(201).json({ message: 'Message saved successfully.' });
+  } catch (error) {
+    console.error('Error saving message:', error);
+    res.status(500).json({ message: 'Internal Server Error' });
+  }
+});
+
+// Get messages for bidder's view
+app.get('/job/:jobId/bid/:bidderId/messages', async (req, res) => {
+  const { jobId, bidderId } = req.params;
+
+  try {
+    //const jobAd = await JobAd.findOne({ _id: jobId, 'bids._id': bidId });
+    const jobAd = await JobAd.findOne({ _id: jobId, 'bids.bidderId': bidderId});
+    
+    if (!jobAd) {
+      return res.status(404).json({ message: 'Job or bid not found.' });
+    }
+    else {
+      console.log(`Messages for job ${jobId} and bidder ${bidderId} found`)
+    }
+
+    const bidIndex = jobAd.bids.findIndex((bid) => bid.bidderId === bidderId);
+    const messages = jobAd.bids[bidIndex].messages;
+
+    res.status(200).json({ messages });
+  } catch (error) {
+    console.error('Error getting messages:', error);
+    res.status(500).json({ message: 'Internal Server Error' });
+  }
+});
+
+
+// Endpoint to get all job posts by a specific user
+app.get('/get-jobads/:userid', async (req, res) => {
+  try {
+    const userId = req.params.userid;
+
+    // Find all job ads by the specified user
+    const jobAds = await JobAd.find({ userid: userId });
+
     res.status(200).json(jobAds);
   } catch (error) {
     console.error('Error:', error);
     res.status(500).json({ message: 'failed', error: 'Internal Server Error' });
   }
-});*/
+});
 
 app.get('/search-ads', async (req, res) => {
   try {
@@ -99,6 +246,38 @@ app.get('/search-ads', async (req, res) => {
   } catch (error) {
     console.error('Error:', error);
     res.status(500).json({ message: 'failed', error: 'Internal Server Error' });
+  }
+});
+
+// Endpoint to get all jobs a user has placed a bid on
+app.get('/user-bids/:bidderId', async (req, res) => {
+  try {
+    const bidderId = req.params.bidderId;
+
+    // Find jobs where the user has placed a bid
+    const jobsWithBids = await JobAd.find({ 'bids.bidderId': bidderId });
+
+    // Extract and format the necessary fields
+    const userBids = jobsWithBids.map((job) => ({
+      jobid:job._id,
+      userid: job.userid,
+      title: job.title,
+      description: job.description,
+      budget: job.budget,
+      close: job.close,
+      createdAt: job.createdAt,
+      bids: job.bids
+        .filter((bid) => bid.bidderId === bidderId) // Filter bids for the specific user
+        .map((filteredBid) => ({
+          bidAmount: filteredBid.bidAmount,
+          bidTime: filteredBid.bidTime,
+        })),
+    }));
+    //console.log(`Messages for ${job._id} and ${bidderId} found`)
+    res.status(200).json(userBids);
+  } catch (error) {
+    console.error('Error:', error);
+    res.status(500).json({ message: 'Internal Server Error' });
   }
 });
 
@@ -163,14 +342,14 @@ app.get('/get-settings', (req, res) => {
         // Passwords match, generate a JWT
         const token = jwt.sign({ userId: existingUser.id }, secretKey, { expiresIn: '24h' });
   
-        return res.status(200).json({ message: true, userid: existingUser.id,token:token, email: existingUser.email });
+        return res.status(200).json({ message: "success", userid: existingUser.id,token:token, email: existingUser.email, firstname:existingUser.firstName });
       } else {
         console.log(`Unable to authenticate user ${existingUser.email}`);
-        return res.status(200).json({ message: false, error: "Invalid credential" });
+        return res.status(200).json({ message: "fail", error: "Invalid credential" });
       }
     } catch (error) {
       console.error('Error:', error);
-      return res.status(500).json({ message: "failed", error: 'Internal Server Error' });
+      return res.status(500).json({ message: "fail", error: 'Internal Server Error' });
     }
   });
 
@@ -204,7 +383,7 @@ app.post('/new-account', async (req, res) => {
       console.log('Received data:', { email, password });
       const token = jwt.sign({ userId: newUser.id }, secretKey, { expiresIn: '24h' });
             
-      return res.status(200).json({ message: 'success', userid: newUser.id, token: token, email: email, id: newUser.id });
+      return res.status(200).json({ message: 'success', userid: newUser.id, token: token, email: email, id: newUser.id, firstname: newUser.firstName });
   }
   catch(error) {
     console.error('Error:', error);
@@ -265,6 +444,32 @@ app.post('/bid', async (req, res) => {
     res.status(500).json({ message: 'Internal Server Error' });
   }
 });
+
+// Endpoint to mark a bid as rewarded
+app.post('/job/reward-bid/:jobId/:bidId', async (req, res) => {
+  const { jobId, bidId } = req.params;
+
+  try {
+    const jobAd = await JobAd.findOne({ _id: jobId, 'bids._id': bidId });
+
+    if (!jobAd) {
+      return res.status(404).json({ message: 'Job or bid not found.' });
+    }
+
+    const bidIndex = jobAd.bids.findIndex((bid) => bid._id.toString() === bidId);
+
+    // Mark the bid as rewarded
+    jobAd.bids[bidIndex].rewarded = true;
+
+    await jobAd.save();
+
+    res.status(200).json({ message: 'Bid marked as rewarded successfully.' });
+  } catch (error) {
+    console.error('Error marking bid as rewarded:', error);
+    res.status(500).json({ message: 'Internal Server Error' });
+  }
+});
+
 
 app.post('/post-messages', (req, res) => {
     // Handle the GET request for the "users" route

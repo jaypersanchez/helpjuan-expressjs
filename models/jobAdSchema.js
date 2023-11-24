@@ -43,6 +43,28 @@ const jobAdSchema = new mongoose.Schema({
         type: Boolean,
         default: false,
       },
+      messages: [
+        {
+          senderId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'User',
+            required: true,
+          },
+          receiverId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'User',
+            required: true,
+          },
+          message: {
+            type: String,
+            required: true,
+          },
+          timestamp: {
+            type: Date,
+            default: Date.now,
+          },
+        },
+      ],
     },
   ],
 });
