@@ -33,6 +33,43 @@ const userSchema = new mongoose.Schema({
     type: String, // Assuming you store the image URL as a string
     required: false,
   },
+  paymentMethods: [
+    {
+      type: {
+        type: String,
+        enum: ['GCash', 'Debit/Credit', 'Paypal'],
+        required: true,
+      },
+      mobile: {
+        type: String,
+        required: false,
+      },
+      card: {
+        number: {
+          type: String,
+          required: false,
+        },
+        name: {
+          type: String,
+          required: false,
+        },
+        expiry: {
+          type: String,
+          required: false,
+        },
+        cvv: {
+          type: String,
+          required: false,
+        },
+      },
+      paypal: {
+        email: {
+          type: String,
+          required: false,
+        },
+      },
+    },
+  ],
 });
 
 // Hash the password before saving to the database
