@@ -471,7 +471,8 @@ app.post('/job/reward-bid/:jobId/:bidId', async (req, res) => {
 });
 
 app.post('/paymentmethods', async (req, res) => {
-  const { userId, paymentType, data } = req.body;
+  const { userId, selectedPaymentMethod, data } = req.body;
+  console.log(`${userId} ${selectedPaymentMethod} ${JSON.stringify(data)}`)
 
   try {
     // Find the user by userId
@@ -482,11 +483,11 @@ app.post('/paymentmethods', async (req, res) => {
     }
 
     // Add the new payment method based on the type
-    switch (paymentType) {
+    switch (selectedPaymentMethod) {
       case 'GCash':
         user.paymentMethods.push({ type: 'GCash', mobile: data.mobile });
         break;
-      case 'Debit/Credit':
+      case 'card':
         user.paymentMethods.push({
           type: 'Debit/Credit',
           card: {

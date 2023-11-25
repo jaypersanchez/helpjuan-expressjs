@@ -37,7 +37,7 @@ const userSchema = new mongoose.Schema({
     {
       type: {
         type: String,
-        enum: ['GCash', 'Debit/Credit', 'Paypal'],
+        enum: ['GCash', 'card', 'Paypal', 'Debit/Credit'],
         required: true,
       },
       mobile: {
