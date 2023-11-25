@@ -448,7 +448,7 @@ app.post('/bid', async (req, res) => {
 // Endpoint to mark a bid as rewarded
 app.post('/job/reward-bid/:jobId/:bidId', async (req, res) => {
   const { jobId, bidId } = req.params;
-
+  console.log(`Rewarding to ${jobId}/${bidId}`)
   try {
     const jobAd = await JobAd.findOne({ _id: jobId, 'bids._id': bidId });
 
@@ -470,6 +470,50 @@ app.post('/job/reward-bid/:jobId/:bidId', async (req, res) => {
   }
 });
 
+app.post('/paymentmethods', async (req, res) => {
+  const { userId, selectedPaymentMethod, data } = req.body;
+  console.log(`${userId} ${selectedPaymentMethod} ${JSON.stringify(data)}`)
+
+  try {
+    // Find the user by userId
+    const user = await User.findById(userId);
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Add the new payment method based on the type
+    switch (selectedPaymentMethod) {
+      case 'GCash':
+        user.paymentMethods.push({ type: 'GCash', mobile: data.mobile });
+        break;
+      case 'card':
+        user.paymentMethods.push({
+          type: 'Debit/Credit',
+          card: {
+            number: data.cardNumber,
+            name: data.cardName,
+            expiry: data.cardExpiry,
+            cvv: data.cardCVV,
+          },
+        });
+        break;
+      case 'Paypal':
+        user.paymentMethods.push({ type: 'Paypal', paypal: { email: data.paypalEmail } });
+        break;
+      default:
+        return res.status(400).json({ message: 'Invalid payment type' });
+    }
+
+    // Save the updated user document
+    await user.save();
+
+    res.status(200).json({ message: 'Payment method saved successfully' });
+  } catch (error) {
+    console.error('Error saving payment method:', error);
+    res.status(500).json({ message: 'Internal Server Error' });
+  }
+});
 
 app.post('/post-messages', (req, res) => {
     // Handle the GET request for the "users" route
