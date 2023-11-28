@@ -341,8 +341,9 @@ app.get('/get-settings', (req, res) => {
       if (isPasswordValid) {
         // Passwords match, generate a JWT
         const token = jwt.sign({ userId: existingUser.id }, secretKey, { expiresIn: '24h' });
-  
+        console.log
         return res.status(200).json({ message: "success", userid: existingUser.id,token:token, email: existingUser.email, firstname:existingUser.firstName });
+
       } else {
         console.log(`Unable to authenticate user ${existingUser.email}`);
         return res.status(200).json({ message: "fail", error: "Invalid credential" });
