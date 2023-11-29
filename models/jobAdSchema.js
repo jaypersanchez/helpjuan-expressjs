@@ -31,6 +31,10 @@ const jobAdSchema = new mongoose.Schema({
         type: String,
         required: true,
       },
+      firstname: {
+        type: String,
+        require: true,
+      },
       bidAmount: {
         type: Number,
         required: true,

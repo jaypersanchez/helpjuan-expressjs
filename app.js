@@ -5,7 +5,8 @@ const cors = require('cors');
 const connectToDatabase = require('./db')
 const jwt = require('jsonwebtoken');
 require('dotenv').config();
-
+const swaggerUi = require('swagger-ui-express');
+//const swaggerDocument = require('./swagger.json');
 
 const User = require('./models/user'); 
 const JobAd = require('./models/jobAdSchema');
@@ -16,6 +17,7 @@ const app = express();
 // Middleware
 app.use(bodyParser.json());
 app.use(cors());
+//app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 // Connect to MongoDB using Mongoose
 // Connect to MongoDB
@@ -26,12 +28,27 @@ const secretKey = process.env.SECRET_KEY
 // Sample user data (usually, you'd retrieve this from a database)
 const users = [];
 
+/**
+ * @swagger
+ * /test:
+ *   get:
+ *     summary: Test route
+ *     description: Returns a simple message.
+ *     responses:
+ *       200:
+ *         description: Returns a message.
+ */
+app.get('/test', (req, res) => {
+  res.send('Test route');
+});
+
 // Get route methods
 app.get('/get-users', async (req, res) => {
     // Handle the GET request for the "users" route
     // You can return data or perform other actions here
 });
-  
+
+
 app.get('/get-profile', async (req, res) => {
   try {
     const { email, id } = req.query;
@@ -57,7 +74,7 @@ app.get('/get-profile', async (req, res) => {
   }
 });
 
-//return only job posted by other and not by the current user
+
 app.post('/get-postads', async (req, res) => {
   try {
     // Assuming you have the current user's ID from the request
@@ -116,13 +133,14 @@ app.get('/jobads/:userid', async (req, res) => {
   const { userid } = req.params;
 
   try {
+    console.log(`Getting JobAds for ${userid}`)
     // Find all JobAds that match the provided userid
     const jobAds = await JobAd.find({ userid });
 
     if (!jobAds || jobAds.length === 0) {
       return res.status(404).json({ message: 'No JobAds found for the given userid.' });
     }
-
+    console.log(`JobAds ${JSON.stringify(jobAds)}`)
     res.status(200).json(jobAds);
   } catch (error) {
     console.error('Error fetching JobAds:', error);
@@ -430,9 +448,17 @@ app.post('/bid', async (req, res) => {
       return res.status(400).json({ message: 'Job post is closed for bidding' });
     }
 
+    // Fetch the bidder's information from the User schema
+    const bidder = await User.findById(bidderId);
+    console.log(`bidder info ${JSON.stringify(bidder.firstName)}`)
+    if (!bidder) {
+      return res.status(404).json({ message: 'Bidder not found' });
+    }
+    const firstname = bidder.firstName
     // Add the bid to the job post
     jobPost.bids.push({
       bidderId,
+      firstname,
       bidAmount,
     });
 
