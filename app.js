@@ -379,7 +379,7 @@ app.post('/new-account', async (req, res) => {
   try {
       // Retrieve data from the request body
       //const { email, firstName, lastName, mobile, password } = req.body;
-      const { email, password } = req.body;
+      const { email, firstname, password } = req.body;
       // Check if the user with the given email exists in the database
       const existingUser = await User.findOne({ email });
 
@@ -392,6 +392,7 @@ app.post('/new-account', async (req, res) => {
       // Create a new user instance
       const newUser = new User({
         email,
+        firstName: firstname,
         password: password, // Save the hashed password
       });
 
