@@ -47,6 +47,16 @@ const jobAdSchema = new mongoose.Schema({
         type: Boolean,
         default: false,
       },
+      rewardedDate: {
+        type: Date,
+      },
+      isActive: {
+        type: Boolean,
+        default: false,
+      },
+      completedDate: {
+        type: Date,
+      },
       messages: [
         {
           senderId: {

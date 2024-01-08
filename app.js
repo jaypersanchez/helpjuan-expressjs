@@ -490,12 +490,40 @@ app.post('/job/reward-bid/:jobId/:bidId', async (req, res) => {
 
     // Mark the bid as rewarded
     jobAd.bids[bidIndex].rewarded = true;
+    jobAd.bids[bidIndex].isActive = true;
+    jobAd.bids[bidIndex].rewardedDate = new Date();
 
     await jobAd.save();
 
     res.status(200).json({ message: 'Bid marked as rewarded successfully.' });
   } catch (error) {
     console.error('Error marking bid as rewarded:', error);
+    res.status(500).json({ message: 'Internal Server Error' });
+  }
+});
+
+//Endpoint to end the project for specific worker
+app.post('/job/complete-work/:jobId/:bidId', async (req, res) => {
+  const { jobId, bidId } = req.params;
+  console.log(`Ending Work for ${jobId}/${bidId}`)
+  try {
+    const jobAd = await JobAd.findOne({ _id: jobId, 'bids._id': bidId });
+
+    if (!jobAd) {
+      return res.status(404).json({ message: 'Job or bid not found.' });
+    }
+
+    const bidIndex = jobAd.bids.findIndex((bid) => bid._id.toString() === bidId);
+
+    // Mark the bid as rewarded
+    jobAd.bids[bidIndex].isActive = false;
+    jobAd.bids[bidIndex].completedDate = new Date();
+
+    await jobAd.save();
+
+    res.status(200).json({ message: 'Work Completed successfully.' });
+  } catch (error) {
+    console.error('Error marking job completed:', error);
     res.status(500).json({ message: 'Internal Server Error' });
   }
 });
