@@ -528,6 +528,8 @@ app.post('/job/complete-work/:jobId/:bidId', async (req, res) => {
   }
 });
 
+//Will allow to close the project even with active workers on the project.  This can be used to 
+//stop people from bidding.
 app.post('/job/toggle-status/:jobId', async (req, res) => {
   const { jobId } = req.params;
   const { close } = req.body; // boolean value to set the job as open or closed
