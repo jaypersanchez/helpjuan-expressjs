@@ -528,6 +528,41 @@ app.post('/job/complete-work/:jobId/:bidId', async (req, res) => {
   }
 });
 
+app.post('/job/toggle-status/:jobId', async (req, res) => {
+  const { jobId } = req.params;
+  const { close } = req.body; // boolean value to set the job as open or closed
+
+  // Validate jobId
+  if (!mongoose.Types.ObjectId.isValid(jobId)) {
+    return res.status(400).send('Invalid job ID.');
+  }
+
+  // Validate close field
+  if (typeof close !== 'boolean') {
+    return res.status(400).send('Close must be a boolean value.');
+  }
+
+  try {
+    const jobAd = await JobAd.findById(jobId);
+
+    if (!jobAd) {
+      return res.status(404).send('Job not found.');
+    }
+
+    // Toggle the close field
+    jobAd.close = close;
+    jobAd.closeDate = new Date()
+
+    await jobAd.save();
+
+    res.status(200).send(`Job has been ${close ? 'closed' : 'opened'} successfully.`);
+  } catch (error) {
+    console.error('Error updating job status:', error);
+    res.status(500).send('Internal Server Error');
+  }
+});
+
+
 //Endpoint to rank a worker
 app.post('/rankWorker', async (req, res) => {
   try {

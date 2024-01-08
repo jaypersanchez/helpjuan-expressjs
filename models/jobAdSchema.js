@@ -21,6 +21,9 @@ const jobAdSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
+  closeDate: {
+    type: Date
+  },
   createdAt: {
     type: Date,
     default: Date.now,
