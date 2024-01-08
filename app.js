@@ -7,9 +7,10 @@ const jwt = require('jsonwebtoken');
 require('dotenv').config();
 const swaggerUi = require('swagger-ui-express');
 //const swaggerDocument = require('./swagger.json');
-
+const mongoose = require('mongoose');
 const User = require('./models/user'); 
 const JobAd = require('./models/jobAdSchema');
+const Ranking = require('./models/rankingSchema')
 
 
 const app = express();
@@ -63,6 +64,7 @@ app.get('/get-profile', async (req, res) => {
 
     // Return the user profile
     return res.json({
+      id: user._id,
       email: user.email,
       firstName: user.firstName,
       lastName: user.lastName,
@@ -495,6 +497,71 @@ app.post('/job/reward-bid/:jobId/:bidId', async (req, res) => {
   } catch (error) {
     console.error('Error marking bid as rewarded:', error);
     res.status(500).json({ message: 'Internal Server Error' });
+  }
+});
+
+//Endpoint to rank a worker
+app.post('/rankWorker', async (req, res) => {
+  try {
+    const { jobId, workerId, rating } = req.body;
+
+    // Validate rating
+    if (rating < 1 || rating > 10) {
+      return res.status(400).send('Rating must be between 1 and 10.');
+    }
+
+    // Check if the job and worker IDs are valid
+    if (!mongoose.Types.ObjectId.isValid(jobId) || !mongoose.Types.ObjectId.isValid(workerId)) {
+      return res.status(400).send('Invalid job or worker ID.');
+    }
+
+    // Further validation can be added here, such as checking if the job exists,
+    // if the user is authorized to rate, and if the worker was indeed awarded the job.
+
+    // Create a new ranking
+    const newRanking = new Ranking({
+      jobId: jobId,
+      workerId: workerId,
+      rating: rating
+    });
+
+    // Save the ranking
+    await newRanking.save();
+
+    res.status(201).send('Worker rated successfully.');
+
+  } catch (error) {
+    console.log(error)
+    res.status(500).send('Server error');
+  }
+});
+
+//Get worker rating
+app.get('/workerRating/:workerId', async (req, res) => {
+  try {
+    const workerId = req.params.workerId;
+
+    // Validate worker ID
+    if (!mongoose.Types.ObjectId.isValid(workerId)) {
+      return res.status(400).send('Invalid worker ID.');
+    }
+
+    // Fetch all rankings for the worker
+    const rankings = await Ranking.find({ workerId: workerId });
+
+    // Calculate the average rating
+    const averageRating = rankings.reduce((acc, curr) => acc + curr.rating, 0) / rankings.length;
+
+    // Check if the worker has ratings
+    if (rankings.length === 0) {
+      return res.status(404).send('No ratings found for this worker.');
+    }
+
+    res.status(200).send({ averageRating: averageRating });
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).send('Server error: ' + error.message);
   }
 });
 
